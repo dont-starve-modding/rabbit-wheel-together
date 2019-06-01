@@ -1,0 +1,6 @@
+<Atlas>
+    <Texture filename="rabbitwheel.tex" />
+    <Elements>
+        <Element name="rabbitwheel.tex" u1="0.0078125" u2="0.9609375" v1="0.0078125" v2="0.9921875" />
+    </Elements>
+</Atlas>
