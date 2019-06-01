@@ -44,13 +44,23 @@ if (GetModConfigData("poop_amount") == "high") then
     TUNING.RABBITWHEEL_COST_LOG = 8
 end
 
-local recipe = AddRecipe("rabbitwheel", {
+local recipe = AddRecipe("rabbitwheel",
+    -- {
+    --     Ingredient("sewing_tape", 1), 
+    --     Ingredient("log", 2), 
+    --     Ingredient("nitre", 2)
+    -- }, 
+    {
         GLOBAL.Ingredient("rocks", TUNING.RABBITWHEEL_COST_ROCKS),
-    },     
-    GLOBAL.RECIPETABS.ENGINEERING,  
-    GLOBAL.TECH.NONE,
-    "rabbitwheel_placer"
-)
+    }, 
+    GLOBAL.CUSTOM_RECIPETABS.ENGINEERING, 
+    GLOBAL.TECH.NONE, 
+    "rabbitwheel_placer", 
+    TUNING.WINONA_ENGINEERING_SPACING, 
+    nil, nil, 
+    "handyperson")
+
+
 recipe.atlas = "images/inventoryimages/rabbitwheel.xml"
 
 
