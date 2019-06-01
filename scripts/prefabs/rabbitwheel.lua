@@ -353,9 +353,9 @@ local function OnBuilt(inst)--, data)
     inst.components.fueled:StopConsuming()
     BroadcastCircuitChanged(inst)
     StopSoundLoop(inst)
-    inst:DoTaskInTime(60 * FRAMES, OnBuilt1)
-    inst:DoTaskInTime(66 * FRAMES, OnBuilt2)
-    inst:DoTaskInTime(72 * FRAMES, OnBuilt2)
+    inst:DoTaskInTime(10 * FRAMES, OnBuilt1)
+    inst:DoTaskInTime(30 * FRAMES, OnBuilt2)
+    inst:DoTaskInTime(50 * FRAMES, OnBuilt3)
 end
 
 --------------------------------------------------------------------------
