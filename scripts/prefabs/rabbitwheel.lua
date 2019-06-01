@@ -4,6 +4,8 @@ local assets =
 {
     Asset("ANIM", "anim/rabbitwheel.zip"),
     Asset("ANIM", "anim/winona_battery_placement.zip"),
+
+    Asset("SOUND", "sound/rabbit.fsb"),
 }
 
 local prefabs =
@@ -140,7 +142,7 @@ local function OnWorked(inst)
     if inst.components.fueled.accepting then
         PlayHitAnim(inst)
     end
-    inst.SoundEmitter:PlaySound("dontstarve/common/together/catapult/hit")
+    inst.SoundEmitter:PlaySound("dontstarve/rabbit/scream_short")
 end
 
 local function OnWorkFinished(inst)
@@ -197,7 +199,7 @@ local function OnFuelEmpty(inst)
             inst.AnimState:PlayAnimation("idle_empty")
         end
         if not POPULATING then
-            inst.SoundEmitter:PlaySound("dontstarve/common/together/battery/down")
+            inst.SoundEmitter:PlaySound("dontstarve/rabbit/scream")
         end
     end
 end
@@ -215,7 +217,7 @@ local function OnAddFuel(inst)
             end
         end
         PlayHitAnim(inst)
-        inst.SoundEmitter:PlaySound("dontstarve/common/together/battery/up")
+        inst.SoundEmitter:PlaySound("dontstarve/rabbit/scream_short")
     end
 end
 
@@ -301,7 +303,7 @@ end
 
 local function OnBuilt1(inst)
     if inst.AnimState:IsCurrentAnimation("place") then
-        inst.SoundEmitter:PlaySound("dontstarve/common/together/battery/up")
+        inst.SoundEmitter:PlaySound("dontstarve/rabbit/scream_short")
         if not (inst.components.fueled:IsEmpty() or inst:IsAsleep()) then
             StartSoundLoop(inst)
         end
@@ -317,7 +319,7 @@ local function OnBuilt(inst)--, data)
     inst:ListenForEvent("animover", OnBuilt3)
     inst.AnimState:PlayAnimation("place")
     inst.AnimState:ClearAllOverrideSymbols()
-    inst.SoundEmitter:PlaySound("dontstarve/common/together/battery/place")
+    inst.SoundEmitter:PlaySound("dontstarve/rabbit/scream")
     inst:AddTag("NOCLICK")
     inst.components.fueled.accepting = false
     inst.components.fueled:StopConsuming()
