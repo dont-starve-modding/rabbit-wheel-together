@@ -39,3 +39,8 @@ luac.out
 *.hex
 
 build/
+
+winona_battery_low/
+winona_battery_placement/
+rabbit/
+rabbit-wheel/
