@@ -18,20 +18,24 @@ local prefabs =
 local PERIOD = .5
 
 local function DoAddBatteryPower(inst, node)
+    print("DoAddBatteryPower")
     node:AddBatteryPower(PERIOD + math.random(2, 6) * FRAMES)
 end
 
 local function OnBatteryTask(inst)
+    print("OnBatteryTask")
     inst.components.circuitnode:ForEachNode(DoAddBatteryPower)
 end
 
 local function StartBattery(inst)
+    print("StartBattery")
     if inst._batterytask == nil then
         inst._batterytask = inst:DoPeriodicTask(PERIOD, OnBatteryTask, 0)
     end
 end
 
 local function StopBattery(inst)
+    print("StopBattery")
     if inst._batterytask ~= nil then
         inst._batterytask:Cancel()
         inst._batterytask = nil
@@ -39,6 +43,7 @@ local function StopBattery(inst)
 end
 
 local function UpdateCircuitPower(inst)
+    print("UpdateCircuitPower")
     inst._circuittask = nil
     if inst.components.fueled ~= nil then
         if inst.components.fueled.consuming then
@@ -60,16 +65,19 @@ local function UpdateCircuitPower(inst)
 end
 
 local function OnCircuitChanged(inst)
+    print("OnCircuitChanged")
     if inst._circuittask == nil then
         inst._circuittask = inst:DoTaskInTime(0, UpdateCircuitPower)
     end
 end
 
 local function NotifyCircuitChanged(inst, node)
+    print("NotifyCircuitChanged")
     node:PushEvent("engineeringcircuitchanged")
 end
 
 local function BroadcastCircuitChanged(inst)
+    print("BroadcastCircuitChanged")
     --Notify other connected nodes, so that they can notify their connected batteries
     inst.components.circuitnode:ForEachNode(NotifyCircuitChanged)
     if inst._circuittask ~= nil then
@@ -79,6 +87,7 @@ local function BroadcastCircuitChanged(inst)
 end
 
 local function OnConnectCircuit(inst)--, node)
+    print("OnConnectCircuit")
     if inst.components.fueled ~= nil and inst.components.fueled.consuming then
         StartBattery(inst)
     end
@@ -86,6 +95,7 @@ local function OnConnectCircuit(inst)--, node)
 end
 
 local function OnDisconnectCircuit(inst)--, node)
+    print("OnDisconnectCircuit")
     if not inst.components.circuitnode:IsConnected() then
         StopBattery(inst)
     end
@@ -97,12 +107,14 @@ end
 local NUM_LEVELS = 6
 
 local function UpdateSoundLoop(inst, level)
+    print("UpdateSoundLoop")
     if inst.SoundEmitter:PlayingSound("loop") then
         inst.SoundEmitter:SetParameter("loop", "intensity", 1 - level / NUM_LEVELS)
     end
 end
 
 local function StartSoundLoop(inst)
+    print("StartSoundLoop")
     if not inst.SoundEmitter:PlayingSound("loop") then
         inst.SoundEmitter:PlaySound("dontstarve/common/together/battery/on_LP", "loop")
         UpdateSoundLoop(inst, inst.components.fueled:GetCurrentSection())
@@ -110,10 +122,12 @@ local function StartSoundLoop(inst)
 end
 
 local function StopSoundLoop(inst)
+    print("StopSoundLoop")
     inst.SoundEmitter:KillSound("loop")
 end
 
 local function OnEntityWake(inst)
+    print("OnEntityWake")
     if inst.components.fueled ~= nil and inst.components.fueled.consuming then
         StartSoundLoop(inst)
     end
@@ -122,6 +136,7 @@ end
 --------------------------------------------------------------------------
 
 local function OnHitAnimOver(inst)
+    print("OnHitAnimOver")
     inst:RemoveEventCallback("animover", OnHitAnimOver)
     if inst.AnimState:IsCurrentAnimation("hit") then
         if inst.components.fueled:IsEmpty() then
@@ -133,12 +148,14 @@ local function OnHitAnimOver(inst)
 end
 
 local function PlayHitAnim(inst)
+    print("PlayHitAnim")
     inst:RemoveEventCallback("animover", OnHitAnimOver)
     inst:ListenForEvent("animover", OnHitAnimOver)
     inst.AnimState:PlayAnimation("hit")
 end
 
 local function OnWorked(inst)
+    print("OnWorked")
     if inst.components.fueled.accepting then
         PlayHitAnim(inst)
     end
@@ -146,6 +163,7 @@ local function OnWorked(inst)
 end
 
 local function OnWorkFinished(inst)
+    print("OnWorkFinished")
     if inst.components.burnable ~= nil and inst.components.burnable:IsBurning() then
         inst.components.burnable:Extinguish()
     end
@@ -157,6 +175,7 @@ local function OnWorkFinished(inst)
 end
 
 local function OnBurnt(inst)
+    print("OnBurnt")
     DefaultBurntStructureFn(inst)
     StopSoundLoop(inst)
     if inst.components.fueled ~= nil then
@@ -174,12 +193,14 @@ end
 --------------------------------------------------------------------------
 
 local function GetStatus(inst)
+    print("GetStatus")
     if inst:HasTag("burnt") then
         return "BURNT"
     elseif inst.components.burnable ~= nil and inst.components.burnable:IsBurning() then
         return "BURNING"
     end
     local level = inst.components.fueled ~= nil and inst.components.fueled:GetCurrentSection() or nil
+    print(level)
     return level ~= nil
         and (   (level <= 0 and "OFF") or
                 (level <= 1 and "LOWPOWER")
@@ -188,13 +209,17 @@ local function GetStatus(inst)
 end
 
 local function OnFuelEmpty(inst)
+    print("OnFuelEmpty")
     if inst.components.fueled.accepting then
         inst.components.fueled:StopConsuming()
         BroadcastCircuitChanged(inst)
         StopBattery(inst)
         StopSoundLoop(inst)
-        inst.AnimState:OverrideSymbol("m2", "rabbitwheel", "m1")
-        inst.AnimState:OverrideSymbol("plug", "rabbitwheel", "plug_off")
+
+        -- TODO this is needed!!!
+        -- inst.AnimState:OverrideSymbol("m2", "rabbitwheel", "m1")
+        -- inst.AnimState:OverrideSymbol("plug", "rabbitwheel", "plug_off")
+
         if inst.AnimState:IsCurrentAnimation("idle_charge") then
             inst.AnimState:PlayAnimation("idle_empty")
         end
@@ -205,6 +230,7 @@ local function OnFuelEmpty(inst)
 end
 
 local function OnAddFuel(inst)
+    print("OnAddFuel")
     if inst.components.fueled.accepting and not inst.components.fueled:IsEmpty() then
         if not inst.components.fueled.consuming then
             inst.components.fueled:StartConsuming()
@@ -222,18 +248,22 @@ local function OnAddFuel(inst)
 end
 
 local function OnFuelSectionChange(new, old, inst)
+    print("OnFuelSectionChange")
     if inst.components.fueled.accepting then
-        inst.AnimState:OverrideSymbol("m2", "rabbitwheel", "m"..tostring(math.clamp(new + 1, 1, 7)))
-        inst.AnimState:ClearOverrideSymbol("plug")
+        -- TODO this is needed!
+        -- inst.AnimState:OverrideSymbol("m2", "rabbitwheel", "m"..tostring(math.clamp(new + 1, 1, 7)))
+        -- inst.AnimState:ClearOverrideSymbol("plug")
         UpdateSoundLoop(inst, new)
     end
 end
 
 local function OnSave(inst, data)
+    print("OnSave")
     data.burnt = inst.components.burnable ~= nil and inst.components.burnable:IsBurning() or inst:HasTag("burnt") or nil
 end
 
 local function OnLoad(inst, data, ents)
+    print("OnLoad")
     if data ~= nil and data.burnt then
         inst.components.burnable.onburnt(inst)
     elseif inst.components.fueled:IsEmpty() then
@@ -247,11 +277,13 @@ local function OnLoad(inst, data, ents)
 end
 
 local function OnInit(inst)
+    print("OnInit")
     inst._inittask = nil
     inst.components.circuitnode:ConnectTo("engineering")
 end
 
 local function OnLoadPostPass(inst)
+    print("OnLoadPostPass")
     if inst._inittask ~= nil then
         inst._inittask:Cancel()
         OnInit(inst)
@@ -261,62 +293,58 @@ end
 --------------------------------------------------------------------------
 
 local function OnBuilt3(inst)
-    inst:RemoveEventCallback("animover", OnBuilt3)
-    if inst.AnimState:IsCurrentAnimation("place") then
-        inst:RemoveTag("NOCLICK")
-        inst.components.fueled.accepting = true
-        if inst.components.fueled:IsEmpty() then
-            OnFuelEmpty(inst)
-        else
-            OnFuelSectionChange(inst.components.fueled:GetCurrentSection(), nil, inst)
-            inst.AnimState:PlayAnimation("idle_charge", true)
-            if not inst.components.fueled.consuming then
-                inst.components.fueled:StartConsuming()
-                BroadcastCircuitChanged(inst)
-            end
-            if inst.components.circuitnode:IsConnected() then
-                StartBattery(inst)
-            end
-            if not inst:IsAsleep() then
-                StartSoundLoop(inst)
-            end
+    print("OnBuilt3")
+    inst:RemoveTag("NOCLICK")
+    inst.components.fueled.accepting = true
+    if inst.components.fueled:IsEmpty() then
+        OnFuelEmpty(inst)
+    else
+        OnFuelSectionChange(inst.components.fueled:GetCurrentSection(), nil, inst)
+        inst.AnimState:PlayAnimation("idle_charge", true)
+        if not inst.components.fueled.consuming then
+            inst.components.fueled:StartConsuming()
+            BroadcastCircuitChanged(inst)
         end
-    end
-end
-
-local function OnBuilt2(inst)
-    if inst.AnimState:IsCurrentAnimation("place") then
-        if inst.components.fueled:IsEmpty() then
-            StopSoundLoop(inst)
-        else
-            if not inst.components.fueled.consuming then
-                inst.components.fueled:StartConsuming()
-                BroadcastCircuitChanged(inst)
-            end
-            if not inst:IsAsleep() then
-                StartSoundLoop(inst)
-            end
+        if inst.components.circuitnode:IsConnected() then
+            StartBattery(inst)
         end
-        inst.components.circuitnode:ConnectTo("engineering")
-    end
-end
-
-local function OnBuilt1(inst)
-    if inst.AnimState:IsCurrentAnimation("place") then
-        inst.SoundEmitter:PlaySound("dontstarve/rabbit/scream_short")
-        if not (inst.components.fueled:IsEmpty() or inst:IsAsleep()) then
+        if not inst:IsAsleep() then
             StartSoundLoop(inst)
         end
     end
 end
 
+local function OnBuilt2(inst)
+    print("OnBuilt2")
+    if inst.components.fueled:IsEmpty() then
+        StopSoundLoop(inst)
+    else
+        if not inst.components.fueled.consuming then
+            inst.components.fueled:StartConsuming()
+            BroadcastCircuitChanged(inst)
+        end
+        if not inst:IsAsleep() then
+            StartSoundLoop(inst)
+        end
+    end
+    inst.components.circuitnode:ConnectTo("engineering")
+end
+
+local function OnBuilt1(inst)
+    print("OnBuilt1")
+    inst.SoundEmitter:PlaySound("dontstarve/rabbit/scream_short")
+    if not (inst.components.fueled:IsEmpty() or inst:IsAsleep()) then
+        StartSoundLoop(inst)
+    end
+end
+
 local function OnBuilt(inst)--, data)
+    print("OnBuilt")
     if inst._inittask ~= nil then
         inst._inittask:Cancel()
         inst._inittask = nil
     end
     inst.components.circuitnode:Disconnect()
-    inst:ListenForEvent("animover", OnBuilt3)
     inst.AnimState:PlayAnimation("place")
     inst.AnimState:ClearAllOverrideSymbols()
     inst.SoundEmitter:PlaySound("dontstarve/rabbit/scream")
@@ -327,6 +355,7 @@ local function OnBuilt(inst)--, data)
     StopSoundLoop(inst)
     inst:DoTaskInTime(60 * FRAMES, OnBuilt1)
     inst:DoTaskInTime(66 * FRAMES, OnBuilt2)
+    inst:DoTaskInTime(72 * FRAMES, OnBuilt2)
 end
 
 --------------------------------------------------------------------------
@@ -334,6 +363,7 @@ end
 local PLACER_SCALE = 1.5
 
 local function OnUpdatePlacerHelper(helperinst)
+    print("OnUpdatePlacerHelper")
     if not helperinst.placerinst:IsValid() then
         helperinst.components.updatelooper:RemoveOnUpdateFn(OnUpdatePlacerHelper)
         helperinst.AnimState:SetAddColour(0, 0, 0, 0)
@@ -345,6 +375,7 @@ local function OnUpdatePlacerHelper(helperinst)
 end
 
 local function OnEnableHelper(inst, enabled, recipename, placerinst)
+    print("OnEnableHelper")
     if enabled then
         if inst.helper == nil and inst:HasTag("HAMMER_workable") and not inst:HasTag("burnt") then
             inst.helper = CreateEntity()
@@ -371,7 +402,10 @@ local function OnEnableHelper(inst, enabled, recipename, placerinst)
 
             inst.helper.entity:SetParent(inst.entity)
 
-            if placerinst ~= nil and recipename ~= "rabbitwheel" and recipename ~= "winona_battery_high" then
+            if placerinst ~= nil 
+                    and recipename ~= "rabbitwheel" 
+                    and recipename ~= "winona_battery_low" 
+                    and recipename ~= "winona_battery_high" then
                 inst.helper:AddComponent("updatelooper")
                 inst.helper.components.updatelooper:AddOnUpdateFn(OnUpdatePlacerHelper)
                 inst.helper.placerinst = placerinst
@@ -387,6 +421,7 @@ end
 --------------------------------------------------------------------------
 
 local function fn()
+    print("fn")
     local inst = CreateEntity()
 
     inst.entity:AddTransform()
@@ -473,6 +508,7 @@ end
 --------------------------------------------------------------------------
 
 local function placer_postinit_fn(inst)
+    print("placer_postinit_fn")
     --Show the battery placer on top of the battery range ground placer
 
     local placer2 = CreateEntity()
