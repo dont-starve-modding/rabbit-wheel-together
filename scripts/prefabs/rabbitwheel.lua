@@ -149,16 +149,16 @@ end
 
 local function PlayHitAnim(inst)
     print("PlayHitAnim")
-    inst:RemoveEventCallback("animover", OnHitAnimOver)
-    inst:ListenForEvent("animover", OnHitAnimOver)
-    inst.AnimState:PlayAnimation("hit")
+    -- inst:RemoveEventCallback("animover", OnHitAnimOver)
+    -- inst:ListenForEvent("animover", OnHitAnimOver)
+    -- inst.AnimState:PlayAnimation("hit")
 end
 
 local function OnWorked(inst)
     print("OnWorked")
-    if inst.components.fueled.accepting then
-        PlayHitAnim(inst)
-    end
+    -- if inst.components.fueled.accepting then
+    --     PlayHitAnim(inst)
+    -- end
     inst.SoundEmitter:PlaySound("dontstarve/rabbit/scream_short")
 end
 
@@ -266,12 +266,14 @@ local function OnLoad(inst, data, ents)
     print("OnLoad")
     if data ~= nil and data.burnt then
         inst.components.burnable.onburnt(inst)
-    elseif inst.components.fueled:IsEmpty() then
-        OnFuelEmpty(inst)
-    else
-        UpdateSoundLoop(inst, inst.components.fueled:GetCurrentSection())
-        if inst.AnimState:IsCurrentAnimation("idle_charge") then
-            inst.AnimState:SetTime(inst.AnimState:GetCurrentAnimationLength() * math.random())
+    elseif inst.components.fueled then
+        if inst.components.fueled:IsEmpty() then
+            OnFuelEmpty(inst)
+        else
+            UpdateSoundLoop(inst, inst.components.fueled:GetCurrentSection())
+            if inst.AnimState:IsCurrentAnimation("idle_charge") then
+                inst.AnimState:SetTime(inst.AnimState:GetCurrentAnimationLength() * math.random())
+            end
         end
     end
 end
@@ -292,15 +294,22 @@ end
 
 --------------------------------------------------------------------------
 
-local function OnBuilt3(inst)
-    print("OnBuilt3")
-    inst:RemoveTag("NOCLICK")
+local function DebugAllBuiltActions(inst)
+    -- 1
+    -- 2
+    -- if not inst.components.fueled:IsEmpty() then
+    --     if not inst.components.fueled.consuming then
+    --         inst.components.fueled:StartConsuming()
+    --         BroadcastCircuitChanged(inst)
+    --     end
+    -- end
+
+    -- 3
     inst.components.fueled.accepting = true
     if inst.components.fueled:IsEmpty() then
         OnFuelEmpty(inst)
     else
         OnFuelSectionChange(inst.components.fueled:GetCurrentSection(), nil, inst)
-        inst.AnimState:PlayAnimation("idle_charge", true)
         if not inst.components.fueled.consuming then
             inst.components.fueled:StartConsuming()
             BroadcastCircuitChanged(inst)
@@ -308,34 +317,27 @@ local function OnBuilt3(inst)
         if inst.components.circuitnode:IsConnected() then
             StartBattery(inst)
         end
-        if not inst:IsAsleep() then
-            StartSoundLoop(inst)
-        end
     end
+end
+
+local function OnBuilt3(inst)
+    print("OnBuilt3")
+    inst:RemoveTag("NOCLICK")
+
+    inst.components.circuitnode:ConnectTo("engineering")
+
+    OnDeadRabbit(inst)
+    -- OnFuelEmpty(inst)
 end
 
 local function OnBuilt2(inst)
     print("OnBuilt2")
-    if inst.components.fueled:IsEmpty() then
-        StopSoundLoop(inst)
-    else
-        if not inst.components.fueled.consuming then
-            inst.components.fueled:StartConsuming()
-            BroadcastCircuitChanged(inst)
-        end
-        if not inst:IsAsleep() then
-            StartSoundLoop(inst)
-        end
-    end
-    inst.components.circuitnode:ConnectTo("engineering")
+
 end
 
 local function OnBuilt1(inst)
     print("OnBuilt1")
     inst.SoundEmitter:PlaySound("dontstarve/rabbit/scream_short")
-    if not (inst.components.fueled:IsEmpty() or inst:IsAsleep()) then
-        StartSoundLoop(inst)
-    end
 end
 
 local function OnBuilt(inst)--, data)
@@ -344,18 +346,18 @@ local function OnBuilt(inst)--, data)
         inst._inittask:Cancel()
         inst._inittask = nil
     end
+    
     inst.components.circuitnode:Disconnect()
     inst.AnimState:PlayAnimation("place")
     inst.AnimState:ClearAllOverrideSymbols()
     inst.SoundEmitter:PlaySound("dontstarve/rabbit/scream")
     inst:AddTag("NOCLICK")
-    inst.components.fueled.accepting = false
-    inst.components.fueled:StopConsuming()
+
     BroadcastCircuitChanged(inst)
     StopSoundLoop(inst)
-    inst:DoTaskInTime(10 * FRAMES, OnBuilt1)
-    inst:DoTaskInTime(30 * FRAMES, OnBuilt2)
-    inst:DoTaskInTime(50 * FRAMES, OnBuilt3)
+    inst:DoTaskInTime(30 * FRAMES, OnBuilt1)
+    inst:DoTaskInTime(50 * FRAMES, OnBuilt2)
+    inst:DoTaskInTime(75 * FRAMES, OnBuilt3)
 end
 
 --------------------------------------------------------------------------
@@ -418,6 +420,113 @@ local function OnEnableHelper(inst, enabled, recipename, placerinst)
     end
 end
 
+
+-- specific rabbitwheel stuff ---+
+
+-- 1. empty rabbitwheel is a rabbitcage
+-- 2. if a rabbit is put, it becomes a healthy/hunger instance
+-- 3. the rabbit accepts carrots to satisfy the hunger
+-- 4. the rabbit in the rabbitcage dies over time
+-- 5. the rabbit may starve
+-- 6. the rabbit produces energy based on hunger
+
+function OnDeadRabbit(inst)
+    print("OnDeadRabbit")
+    OnRemoveRabbit(inst)
+end
+
+function OnRabbitHealthDelta(inst, oldpercent, newpercent)
+    print("OnRabbitHealthDelta")
+    if newpercent <= 0 then
+        OnRemoveRabbit(inst)
+    end
+end
+
+function OnRemoveRabbit(inst)
+    print("OnRemoveRabbit")
+    inst.SoundEmitter:PlaySound("dontstarve/rabbit/scream")
+    
+    inst:AddComponent("rabbitcage")
+    inst.components.rabbitcage.onputrabbit = OnPutRabbit
+    inst.components.rabbitcage.ondeadrabbit = OnDeadRabbit
+
+    inst.AnimState:PlayAnimation("idle_norabbit", true) -- TODO
+
+    inst:RemoveComponent("hunger")
+    inst:RemoveComponent("health")
+end
+
+function OnFeed(inst, food) 
+    print("OnFeed")
+    if inst.components.hunger ~= nil then
+        if food == "carrot" then
+            inst.components.hunger:DoDelta(10, false, true)
+        end
+    end
+end
+
+local function ShouldAcceptItem(inst, item)
+    print("ShouldAcceptItem")
+    return item.components.edible ~= nil and
+            (item.prefab ~= "carrot") -- and item.prefab ~= "carrot_cooked" ??
+end
+
+local function OnGetItemFromPlayer(inst, giver, item)
+    print("OnGetItemFromPlayer")
+    --I eat food
+    if item.components.edible ~= nil then
+        if item.prefab == "carrot" then -- or item.prefab == "carrot_cooked" ??
+            OnFeed(inst, item)
+        end
+    end
+end
+
+function OnRabbitHunger(inst, data)
+    print("OnRabbitHunger")
+    -- data = { oldpercent, newpercent, overtime, delta }
+    local factor = 0.5
+    -- TODO CONFIGURABLE
+    -- TODO CALCULATE based on hunger
+    inst.components.fueled:DoDelta(data.delta * factor) -- transform a part of the hunger into energy
+end
+
+function OnPutRabbit(inst, rabbit)
+    print("OnPutRabbit")
+    inst.SoundEmitter:PlaySound("dontstarve/rabbit/scream")
+
+    inst:RemoveComponent("rabbitcage")
+
+     -- TODO make configurable
+    local caloriesperday = 50
+    local maxhunger = 100 
+
+    inst:AddComponent("health") -- every inst with hunger has also health, I guess
+    inst.components.health:SetMaxHealth(TUNING.RABBIT_HEALTH)
+    inst.components.health.ondelta = OnRabbitHealthDelta
+
+    inst:AddComponent("hunger")
+    inst.components.hunger:SetMax(100)
+    inst.components.hunger:SetRate(caloriesperday/TUNING.TOTAL_DAY_TIME)
+    inst.components.hunger:SetKillRate(0) -- don't hurt the rabbitwheel on hunger
+
+    self.inst:ListenForEvent("hungerdelta", OnRabbitHunger)
+
+    inst:AddComponent("trader")
+    inst.components.trader:SetAcceptTest(ShouldAcceptItem)
+    inst.components.trader.onaccept = OnGetItemFromPlayer
+    inst.components.trader.deleteitemonaccept = true
+
+    inst:AddComponent("fueled")
+    inst.components.fueled:SetDepletedFn(OnFuelEmpty)
+    inst.components.fueled:SetTakeFuelFn(OnAddFuel)
+    inst.components.fueled:SetSections(NUM_LEVELS)
+    inst.components.fueled:SetSectionCallback(OnFuelSectionChange)
+    inst.components.fueled:InitializeFuelLevel(TUNING.WINONA_BATTERY_LOW_MAX_FUEL_TIME / 2)
+    inst.components.fueled.fueltype = FUELTYPE.MAGIC -- no associated fuel
+    inst.components.fueled.accepting = true
+    inst.components.fueled:StartConsuming()
+end
+
 --------------------------------------------------------------------------
 
 local function fn()
@@ -461,16 +570,6 @@ local function fn()
     inst:AddComponent("inspectable")
     inst.components.inspectable.getstatus = GetStatus
 
-    inst:AddComponent("fueled")
-    inst.components.fueled:SetDepletedFn(OnFuelEmpty)
-    inst.components.fueled:SetTakeFuelFn(OnAddFuel)
-    inst.components.fueled:SetSections(NUM_LEVELS)
-    inst.components.fueled:SetSectionCallback(OnFuelSectionChange)
-    inst.components.fueled:InitializeFuelLevel(TUNING.WINONA_BATTERY_LOW_MAX_FUEL_TIME)
-    inst.components.fueled.fueltype = FUELTYPE.CHEMICAL
-    inst.components.fueled.accepting = true
-    inst.components.fueled:StartConsuming()
-
     inst:AddComponent("lootdropper")
     inst:AddComponent("workable")
     inst.components.workable:SetWorkAction(ACTIONS.HAMMER)
@@ -498,6 +597,17 @@ local function fn()
     inst.OnEntitySleep = StopSoundLoop
     inst.OnEntityWake = OnEntityWake
 
+    -- default fuel with nitre
+    -- inst:AddComponent("fueled")
+    -- inst.components.fueled:SetDepletedFn(OnFuelEmpty)
+    -- inst.components.fueled:SetTakeFuelFn(OnAddFuel)
+    -- inst.components.fueled:SetSections(NUM_LEVELS)
+    -- inst.components.fueled:SetSectionCallback(OnFuelSectionChange)
+    -- inst.components.fueled:InitializeFuelLevel(TUNING.WINONA_BATTERY_LOW_MAX_FUEL_TIME)
+    -- inst.components.fueled.fueltype = FUELTYPE.CHEMICAL
+    -- inst.components.fueled.accepting = true
+    -- inst.components.fueled:StartConsuming()
+
     inst._batterytask = nil
     inst._inittask = inst:DoTaskInTime(0, OnInit)
     UpdateCircuitPower(inst)
@@ -511,27 +621,27 @@ local function placer_postinit_fn(inst)
     print("placer_postinit_fn")
     --Show the battery placer on top of the battery range ground placer
 
-    local placer2 = CreateEntity()
+    local placer = CreateEntity()
 
     --[[Non-networked entity]]
-    placer2.entity:SetCanSleep(false)
-    placer2.persists = false
+    placer.entity:SetCanSleep(false)
+    placer.persists = false
 
-    placer2.entity:AddTransform()
-    placer2.entity:AddAnimState()
+    placer.entity:AddTransform()
+    placer.entity:AddAnimState()
 
-    placer2:AddTag("CLASSIFIED")
-    placer2:AddTag("NOCLICK")
-    placer2:AddTag("placer")
+    placer:AddTag("CLASSIFIED")
+    placer:AddTag("NOCLICK")
+    placer:AddTag("placer")
 
-    placer2.AnimState:SetBank("rabbitwheel")
-    placer2.AnimState:SetBuild("rabbitwheel")
-    placer2.AnimState:PlayAnimation("idle_placer")
-    placer2.AnimState:SetLightOverride(1)
+    placer.AnimState:SetBank("rabbitwheel")
+    placer.AnimState:SetBuild("rabbitwheel")
+    placer.AnimState:PlayAnimation("idle_placer")
+    placer.AnimState:SetLightOverride(1)
 
-    placer2.entity:SetParent(inst.entity)
+    placer.entity:SetParent(inst.entity)
 
-    inst.components.placer:LinkEntity(placer2)
+    inst.components.placer:LinkEntity(placer)
 
     inst.AnimState:SetScale(PLACER_SCALE, PLACER_SCALE)
 end

@@ -63,4 +63,80 @@ local recipe = AddRecipe("rabbitwheel",
 
 recipe.atlas = "images/inventoryimages/rabbitwheel.xml"
 
+-- carrot fuel
 
+GLOBAL.FUELTYPE.CARROT = "CARROT"
+
+GLOBAL.FUELTYPE.RABBIT = "RABBIT"
+
+GLOBAL.ACTIONS.IMPRISON = GLOBAL.Action({ priority=1, mount_valid=true })
+
+GLOBAL.ACTIONS.IMPRISON.fn  = function(act)
+    if act.target.components.rabbitcage and act.doer.components.inventory then
+        local rabbit = act.doer.components.inventory:RemoveItem(act.invobject)
+        if rabbit and not act.target.components.rabbitcage:HasRabbit() then
+            if act.target.components.rabbitcage:TakeRabbit(rabbit, act.doer) then
+                return true
+            else 
+                act.doer.components.inventory:GiveItem(rabbit)
+                return false
+            end
+        else
+            -- return false, "INUSE"
+            return false
+        end
+    end
+end
+
+AddComponentAction("SCENE", "rabbitcage", function(inst, doer, actions, right)
+    if not inst:HasTag("burnt") and
+        not (doer.replica.rider ~= nil and doer.replica.rider:IsRiding()) then
+        if not inst.components.rabbitcage:HasRabbit() then
+            table.insert(actions, GLOBAL.ACTIONS.IMPRISON)
+        end
+    end
+end)
+
+-- winona structure compatibility
+
+-- add rabbitwheel as RecipeFilter to deployhelper (catapult)
+AddPrefabPostInit("winona_catapult", function(inst)
+    -- correct check would be not TheNet:IsDedicated() which is not available, I guess
+    if inst.components.deployhelper ~= nil then
+        inst.components.deployhelper:AddRecipeFilter("rabbitwheel")
+    end
+
+    -- local oldonenablehelper = inst.components.deployhelper.onenablehelper
+
+    -- inst.components.deployhelper.onenablehelper = function(inst, enabled, recipename, placerinst)
+    --     oldonenablehelper(inst, enabled, recipename, placerinst)
+
+    --     if enabled then
+    --         if inst.helper == nil and inst:HasTag("HAMMER_workable") and not inst:HasTag("burnt") then
+    --             if recipename == "winona_catapult" then
+    --                 -- do nothing - handled in old function
+    --             else
+    --                 inst.helper = CreatePlacerBatteryRing()
+    --                 inst.helper.entity:SetParent(inst.entity)
+    --                 if placerinst ~= nil and recipename == "rabbitwheel" then
+    --                     inst.helper:AddComponent("updatelooper")
+    --                     inst.helper.components.updatelooper:AddOnUpdateFn(OnUpdatePlacerHelper)
+    --                     inst.helper.placerinst = placerinst
+    --                     OnUpdatePlacerHelper(inst.helper)
+    --                 end
+    --             end
+    --         end
+    --     elseif inst.helper ~= nil then
+    --         inst.helper:Remove()
+    --         inst.helper = nil
+    --     end
+    -- end
+end)
+
+-- add rabbitwheel as RecipeFilter to deployhelper (spotlight)
+AddPrefabPostInit("winona_spotlight", function(inst)
+    -- correct check would be not TheNet:IsDedicated() which is not available, I guess
+    if inst.components.deployhelper ~= nil then
+        inst.components.deployhelper:AddRecipeFilter("rabbitwheel")
+    end
+end)
