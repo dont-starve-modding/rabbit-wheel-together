@@ -12,15 +12,12 @@ function Rabbitcage:HasRabbit()
 end
 
 
-function Rabbitcage:TakeRabbit(rabbit, doer)
+function Rabbitcage:PutRabbit()
     self.hasrabbit = true
+end
 
-    if self.ontakerabbit then
-        self.onputrabbit(self.inst, rabbit)
-    end
-
-    return true
-    -- else return false
+function Rabbitcage:RemoveRabbit()
+    self.hasrabbit = false
 end
 
 function Rabbitcage:GetDebugString()

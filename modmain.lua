@@ -44,6 +44,19 @@ if (GetModConfigData("poop_amount") == "high") then
     TUNING.RABBITWHEEL_COST_LOG = 8
 end
 
+TUNING.RABBIT_MAX_HUNGER = 20 -- how many joule can a rabbit store?
+TUNING.RABBIT_JOULE_PER_DAY = 50 -- how many joule are burned in a single day?
+TUNING.RABBIT_CARROT_JOULE = 10 -- how many joule gives a carrot?
+TUNING.RABBIT_SEGMENTS_PER_JOULE = 1 -- how many segments lasts a battery with 1 Joule burned by the rabbit?
+
+TUNING.RABBITWHEEL_CAPACITY_IN_SEGMENTS = 5 -- how many segments lasts a full battery?
+TUNING.RABBITWHEEL_FULL_BATTERY_DURATION = TUNING.SEG_TIME * TUNING.RABBITWHEEL_CAPACITY_IN_SEGMENTS
+
+TUNING.RABBIT_JOULE_CONVERSION_RATE = 
+    -- how much time is added to a battery when 1 Joule is burned by the rabbit?
+    TUNING.SEG_TIME * TUNING.RABBIT_SEGMENTS_PER_JOULE
+
+
 local recipe = AddRecipe("rabbitwheel",
     -- {
     --     Ingredient("sewing_tape", 1), 

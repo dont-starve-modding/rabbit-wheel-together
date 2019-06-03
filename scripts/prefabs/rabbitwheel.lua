@@ -359,7 +359,7 @@ end
 
 local function ShouldAcceptCarrot(inst, item)
     print("ShouldAcceptCarrot")
-    return item.prefab == "carrot" or item.prefab == "carrot_cooked"
+    return item.prefab == "carrot"
 end
 
 local function ShouldAcceptRabbit(inst, item)
@@ -375,12 +375,14 @@ local function OnRabbitHunger(inst, data)
     end 
 
     -- data = { oldpercent, newpercent, overtime, delta }
-    local factor = 100
-    -- TODO CONFIGURABLE
-    -- TODO CALCULATE based on hunger
+
+    -- TODO tweak based on current hunger
+    local factor = TUNING.RABBIT_JOULE_CONVERSION_RATE
     if data.delta < 0  then
-        inst.components.fueled:DoDelta(-1 * data.delta * factor) -- transform a part of the hunger into energy
+        local fueldelta = -1 * factor * data.delta
+        inst.components.fueled:DoDelta(fueldelta) -- transform burned food into energy
         
+        print("DELTA ".. tostring(data.delta) .. " * " .. tostring(factor) .. " = " .. tostring(fueldelta))
         print("SECTION " .. tostring(inst.components.fueled:GetCurrentSection()))
         print("PERCENT " .. tostring(inst.components.fueled:GetPercent()))
         if not inst.AnimState:IsCurrentAnimation("idle_charge") then
@@ -413,7 +415,7 @@ local function OnPutRabbit(inst, rabbit)
     inst.components.rabbitcage:PutRabbit()
     
     inst.components.hunger:SetPercent(100)
-    inst.components.hunger:SetRate(50/TUNING.TOTAL_DAY_TIME)
+    inst.components.hunger:SetRate(TUNING.RABBIT_JOULE_PER_DAY/TUNING.TOTAL_DAY_TIME)
     inst:ListenForEvent("hungerdelta", OnRabbitHunger)
 
     inst.components.trader:SetAcceptTest(ShouldAcceptCarrot)
@@ -441,7 +443,7 @@ local function OnFeed(inst, food)
     print("OnFeed")
     if inst.components.hunger ~= nil then
         if food == "carrot" then
-            inst.components.hunger:DoDelta(10, false, true)
+            inst.components.hunger:DoDelta(TUNING.RABBIT_CARROT_JOULE, false, true)
         end
     else
         print("rabbitwheel does not have a hunger component")
@@ -450,7 +452,7 @@ end
 
 local function OnGetItemFromPlayer(inst, giver, item)
     print("OnGetItemFromPlayer")
-    if item.prefab == "carrot" or item.prefab == "carrot_cooked" then
+    if item.prefab == "carrot" then
         OnFeed(inst, item)
     elseif item.prefab == "rabbit" then
         OnPutRabbit(inst, item)
@@ -602,7 +604,7 @@ local function fn()
     inst.components.rabbitcage.hasrabbit = false
 
     -- TODO make configurable
-    local caloriesperday = 50
+    local caloriesperday = TUNING.RABBIT_CALORIES_PER_DAY
     local maxhunger = 100
 
     inst:AddComponent("health") -- every inst with hunger has also health, I guess
@@ -610,8 +612,8 @@ local function fn()
     inst.components.health.ondelta = OnRabbitHealthDelta
 
     inst:AddComponent("hunger")
-    inst.components.hunger:SetMax(100)
-    inst.components.hunger:SetRate(0) -- caloriesperday/TUNING.TOTAL_DAY_TIME)
+    inst.components.hunger:SetMax(TUNING.RABBIT_MAX_HUNGER)
+    inst.components.hunger:SetRate(0)
     inst.components.hunger:SetKillRate(0) -- don't hurt the rabbitwheel on hunger
 
     inst:AddComponent("fueled")
@@ -619,7 +621,7 @@ local function fn()
     -- inst.components.fueled:SetTakeFuelFn(OnAddFuel)
     inst.components.fueled:SetSections(NUM_LEVELS)
     inst.components.fueled:SetSectionCallback(OnFuelSectionChange)
-    inst.components.fueled:InitializeFuelLevel(TUNING.WINONA_BATTERY_LOW_MAX_FUEL_TIME)
+    inst.components.fueled:InitializeFuelLevel(TUNING.RABBITWHEEL_FULL_BATTERY_DURATION)
     inst.components.fueled.fueltype = FUELTYPE.MAGIC -- no associated fuel
     inst.components.fueled.accepting = false
     inst.components.fueled:StartConsuming()
