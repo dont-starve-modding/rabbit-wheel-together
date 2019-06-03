@@ -67,35 +67,50 @@ recipe.atlas = "images/inventoryimages/rabbitwheel.xml"
 
 GLOBAL.FUELTYPE.CARROT = "CARROT"
 
-GLOBAL.FUELTYPE.RABBIT = "RABBIT"
+local oldstrfn = GLOBAL.ACTIONS.GIVE.strfn
 
-GLOBAL.ACTIONS.IMPRISON = GLOBAL.Action({ priority=1, mount_valid=true })
-
-GLOBAL.ACTIONS.IMPRISON.fn  = function(act)
-    if act.target.components.rabbitcage and act.doer.components.inventory then
-        local rabbit = act.doer.components.inventory:RemoveItem(act.invobject)
-        if rabbit and not act.target.components.rabbitcage:HasRabbit() then
-            if act.target.components.rabbitcage:TakeRabbit(rabbit, act.doer) then
-                return true
-            else 
-                act.doer.components.inventory:GiveItem(rabbit)
-                return false
-            end
-        else
-            -- return false, "INUSE"
-            return false
-        end
-    end
+GLOBAL.ACTIONS.GIVE.strfn = function(act)
+    return oldstrfn(act) 
+    or (act.target ~= nil
+        and (
+            act.target:HasTag("rabbitwheel") 
+            and not act.target.components.rabbitcage:HasRabbit() 
+            and "NOTREADY")
+    )
+    or nil -- nil for "Give"
 end
 
-AddComponentAction("SCENE", "rabbitcage", function(inst, doer, actions, right)
-    if not inst:HasTag("burnt") and
-        not (doer.replica.rider ~= nil and doer.replica.rider:IsRiding()) then
-        if not inst.components.rabbitcage:HasRabbit() then
-            table.insert(actions, GLOBAL.ACTIONS.IMPRISON)
-        end
-    end
-end)
+
+-- GLOBAL.FUELTYPE.RABBIT = "RABBIT"
+
+-- GLOBAL.ACTIONS.IMPRISON = GLOBAL.Action({ priority=1, mount_valid=true })
+
+-- GLOBAL.ACTIONS.IMPRISON.fn  = function(act)
+--     if act.target.components.rabbitcage and act.doer.components.inventory then
+--         local rabbit = act.doer.components.inventory:RemoveItem(act.invobject)
+--         if rabbit and not act.target.components.rabbitcage:HasRabbit() then
+--             if act.target.components.rabbitcage:TakeRabbit(rabbit, act.doer) then
+--                 return true
+--             else 
+--                 act.doer.components.inventory:GiveItem(rabbit)
+--                 return false
+--             end
+--         else
+--             -- return false, "INUSE"
+--             return false
+--         end
+--     end
+-- end
+
+-- AddComponentAction("SCENE", "rabbitcage", function(inst, doer, actions, right)
+--     if not inst:HasTag("burnt") and
+--         print("rabbitcage: " .. tostring(inst.components.rabbitcage ~= nil))
+--         not (doer.replica.rider ~= nil and doer.replica.rider:IsRiding()) then
+--         if inst.components.rabbitcage and not inst.components.rabbitcage:HasRabbit() then
+--             table.insert(actions, GLOBAL.ACTIONS.IMPRISON)
+--         end
+--     end
+-- end)
 
 -- winona structure compatibility
 

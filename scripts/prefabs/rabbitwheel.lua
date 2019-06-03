@@ -210,73 +210,63 @@ end
 
 local function OnFuelEmpty(inst)
     print("OnFuelEmpty")
-    if inst.components.fueled.accepting then
-        inst.components.fueled:StopConsuming()
-        BroadcastCircuitChanged(inst)
-        StopBattery(inst)
-        StopSoundLoop(inst)
 
-        -- TODO this is needed!!!
-        -- inst.AnimState:OverrideSymbol("m2", "rabbitwheel", "m1")
-        -- inst.AnimState:OverrideSymbol("plug", "rabbitwheel", "plug_off")
+    inst.components.fueled:StopConsuming()
+    BroadcastCircuitChanged(inst)
+    StopBattery(inst)
+    StopSoundLoop(inst)
 
-        if inst.AnimState:IsCurrentAnimation("idle_charge") then
-            inst.AnimState:PlayAnimation("idle_empty")
-        end
-        if not POPULATING then
-            inst.SoundEmitter:PlaySound("dontstarve/rabbit/scream")
-        end
+    -- TODO this is needed!!!
+    inst.AnimState:OverrideSymbol("status", "rabbitwheel", "m1")
+    inst.AnimState:OverrideSymbol("m1", "rabbitwheel", "m1")
+    inst.AnimState:OverrideSymbol("m2", "rabbitwheel", "m1")
+    inst.AnimState:OverrideSymbol("a", "rabbitwheel", "m1")
+
+    -- inst.AnimState:OverrideSymbol("plug", "rabbitwheel", "plug_off")
+
+    -- if inst.AnimState:IsCurrentAnimation("idle_charge") then
+    inst.AnimState:PlayAnimation("idle_empty", true)
+    -- end
+
+    if not POPULATING then
+        inst.SoundEmitter:PlaySound("dontstarve/rabbit/scream")
     end
 end
 
-local function OnAddFuel(inst)
-    print("OnAddFuel")
-    if inst.components.fueled.accepting and not inst.components.fueled:IsEmpty() then
-        if not inst.components.fueled.consuming then
-            inst.components.fueled:StartConsuming()
-            BroadcastCircuitChanged(inst)
-            if inst.components.circuitnode:IsConnected() then
-                StartBattery(inst)
-            end
-            if not inst:IsAsleep() then
-                StartSoundLoop(inst)
-            end
-        end
-        PlayHitAnim(inst)
-        inst.SoundEmitter:PlaySound("dontstarve/rabbit/scream_short")
-    end
-end
+-- local function OnAddFuel(inst)
+--     print("OnAddFuel")
+--     if inst.components.fueled.accepting and not inst.components.fueled:IsEmpty() then
+--         if not inst.components.fueled.consuming then
+--             inst.components.fueled:StartConsuming()
+--             BroadcastCircuitChanged(inst)
+--             if inst.components.circuitnode:IsConnected() then
+--                 StartBattery(inst)
+--             end
+--             if not inst:IsAsleep() then
+--                 StartSoundLoop(inst)
+--             end
+--         end
+--         PlayHitAnim(inst)
+--         inst.SoundEmitter:PlaySound("dontstarve/rabbit/scream_short")
+--     end
+-- end
 
 local function OnFuelSectionChange(new, old, inst)
-    print("OnFuelSectionChange")
-    if inst.components.fueled.accepting then
-        -- TODO this is needed!
-        -- inst.AnimState:OverrideSymbol("m2", "rabbitwheel", "m"..tostring(math.clamp(new + 1, 1, 7)))
-        -- inst.AnimState:ClearOverrideSymbol("plug")
-        UpdateSoundLoop(inst, new)
-    end
+    print("OnFuelSectionChange " .. tostring(new))
+
+    local val = "m"..tostring(math.clamp(new + 1, 1, 7))
+    print("val"..tostring(val))
+    inst.AnimState:OverrideSymbol("status", "rabbitwheel", val)
+
+    inst.AnimState:OverrideSymbol("status", "rabbitwheel", val)
+    inst.AnimState:OverrideSymbol("m1", "rabbitwheel", val)
+    inst.AnimState:OverrideSymbol("m2", "rabbitwheel", val)
+    inst.AnimState:OverrideSymbol("a", "rabbitwheel", val)
+
+    -- inst.AnimState:ClearOverrideSymbol("plug")
+    UpdateSoundLoop(inst, new)
 end
 
-local function OnSave(inst, data)
-    print("OnSave")
-    data.burnt = inst.components.burnable ~= nil and inst.components.burnable:IsBurning() or inst:HasTag("burnt") or nil
-end
-
-local function OnLoad(inst, data, ents)
-    print("OnLoad")
-    if data ~= nil and data.burnt then
-        inst.components.burnable.onburnt(inst)
-    elseif inst.components.fueled then
-        if inst.components.fueled:IsEmpty() then
-            OnFuelEmpty(inst)
-        else
-            UpdateSoundLoop(inst, inst.components.fueled:GetCurrentSection())
-            if inst.AnimState:IsCurrentAnimation("idle_charge") then
-                inst.AnimState:SetTime(inst.AnimState:GetCurrentAnimationLength() * math.random())
-            end
-        end
-    end
-end
 
 local function OnInit(inst)
     print("OnInit")
@@ -291,76 +281,6 @@ local function OnLoadPostPass(inst)
         OnInit(inst)
     end
 end
-
---------------------------------------------------------------------------
-
-local function DebugAllBuiltActions(inst)
-    -- 1
-    -- 2
-    -- if not inst.components.fueled:IsEmpty() then
-    --     if not inst.components.fueled.consuming then
-    --         inst.components.fueled:StartConsuming()
-    --         BroadcastCircuitChanged(inst)
-    --     end
-    -- end
-
-    -- 3
-    inst.components.fueled.accepting = true
-    if inst.components.fueled:IsEmpty() then
-        OnFuelEmpty(inst)
-    else
-        OnFuelSectionChange(inst.components.fueled:GetCurrentSection(), nil, inst)
-        if not inst.components.fueled.consuming then
-            inst.components.fueled:StartConsuming()
-            BroadcastCircuitChanged(inst)
-        end
-        if inst.components.circuitnode:IsConnected() then
-            StartBattery(inst)
-        end
-    end
-end
-
-local function OnBuilt3(inst)
-    print("OnBuilt3")
-    inst:RemoveTag("NOCLICK")
-
-    inst.components.circuitnode:ConnectTo("engineering")
-
-    OnDeadRabbit(inst)
-    -- OnFuelEmpty(inst)
-end
-
-local function OnBuilt2(inst)
-    print("OnBuilt2")
-
-end
-
-local function OnBuilt1(inst)
-    print("OnBuilt1")
-    inst.SoundEmitter:PlaySound("dontstarve/rabbit/scream_short")
-end
-
-local function OnBuilt(inst)--, data)
-    print("OnBuilt")
-    if inst._inittask ~= nil then
-        inst._inittask:Cancel()
-        inst._inittask = nil
-    end
-    
-    inst.components.circuitnode:Disconnect()
-    inst.AnimState:PlayAnimation("place")
-    inst.AnimState:ClearAllOverrideSymbols()
-    inst.SoundEmitter:PlaySound("dontstarve/rabbit/scream")
-    inst:AddTag("NOCLICK")
-
-    BroadcastCircuitChanged(inst)
-    StopSoundLoop(inst)
-    inst:DoTaskInTime(30 * FRAMES, OnBuilt1)
-    inst:DoTaskInTime(50 * FRAMES, OnBuilt2)
-    inst:DoTaskInTime(75 * FRAMES, OnBuilt3)
-end
-
---------------------------------------------------------------------------
 
 local PLACER_SCALE = 1.5
 
@@ -421,7 +341,7 @@ local function OnEnableHelper(inst, enabled, recipename, placerinst)
 end
 
 
--- specific rabbitwheel stuff ---+
+-- specific rabbitwheel stuff -------------
 
 -- 1. empty rabbitwheel is a rabbitcage
 -- 2. if a rabbit is put, it becomes a healthy/hunger instance
@@ -430,101 +350,191 @@ end
 -- 5. the rabbit may starve
 -- 6. the rabbit produces energy based on hunger
 
-function OnDeadRabbit(inst)
-    print("OnDeadRabbit")
-    OnRemoveRabbit(inst)
-end
-
-function OnRabbitHealthDelta(inst, oldpercent, newpercent)
+local function OnRabbitHealthDelta(inst, oldpercent, newpercent)
     print("OnRabbitHealthDelta")
     if newpercent <= 0 then
         OnRemoveRabbit(inst)
     end
 end
 
-function OnRemoveRabbit(inst)
-    print("OnRemoveRabbit")
-    inst.SoundEmitter:PlaySound("dontstarve/rabbit/scream")
-    
-    inst:AddComponent("rabbitcage")
-    inst.components.rabbitcage.onputrabbit = OnPutRabbit
-    inst.components.rabbitcage.ondeadrabbit = OnDeadRabbit
-
-    inst.AnimState:PlayAnimation("idle_norabbit", true) -- TODO
-
-    inst:RemoveComponent("hunger")
-    inst:RemoveComponent("health")
+local function ShouldAcceptCarrot(inst, item)
+    print("ShouldAcceptCarrot")
+    return item.prefab == "carrot" or item.prefab == "carrot_cooked"
 end
 
-function OnFeed(inst, food) 
+local function ShouldAcceptRabbit(inst, item)
+    print("ShouldAcceptRabbit")
+    return item.prefab == "rabbit"
+end
+
+
+local function OnRabbitHunger(inst, data)
+    print("OnRabbitHunger " .. tostring(data.delta))
+    if data.delta == 0 then
+        return
+    end 
+
+    -- data = { oldpercent, newpercent, overtime, delta }
+    local factor = 100
+    -- TODO CONFIGURABLE
+    -- TODO CALCULATE based on hunger
+    if data.delta < 0  then
+        inst.components.fueled:DoDelta(-1 * data.delta * factor) -- transform a part of the hunger into energy
+        
+        print("SECTION " .. tostring(inst.components.fueled:GetCurrentSection()))
+        print("PERCENT " .. tostring(inst.components.fueled:GetPercent()))
+        if not inst.AnimState:IsCurrentAnimation("idle_charge") then
+            inst.AnimState:PlayAnimation("idle_charge", true)
+        end
+    
+        if not inst.components.fueled.consuming then
+            inst.components.fueled:StartConsuming()
+            BroadcastCircuitChanged(inst)
+            if inst.components.circuitnode:IsConnected() then
+                StartBattery(inst)
+            end
+    
+            -- if not inst:IsAsleep() then
+            --     StartSoundLoop(inst)
+            -- end
+        end
+    end
+end
+
+
+local function OnPutRabbit(inst, rabbit)
+    print("OnPutRabbit")
+    if not POPULATING then
+        inst.SoundEmitter:PlaySound("dontstarve/rabbit/scream")
+    end
+
+    inst.AnimState:PlayAnimation("idle_empty", true)
+
+    inst.components.rabbitcage:PutRabbit()
+    
+    inst.components.hunger:SetPercent(100)
+    inst.components.hunger:SetRate(50/TUNING.TOTAL_DAY_TIME)
+    inst:ListenForEvent("hungerdelta", OnRabbitHunger)
+
+    inst.components.trader:SetAcceptTest(ShouldAcceptCarrot)
+end
+
+local function OnRemoveRabbit(inst)
+    print("OnRemoveRabbit")
+
+    if not POPULATING then
+        inst.SoundEmitter:PlaySound("dontstarve/rabbit/scream")
+    end
+    
+    inst.AnimState:PlayAnimation("idle_norabbit", true)
+
+    inst.components.rabbitcage:RemoveRabbit()
+
+    inst:RemoveEventCallback("hungerdelta", OnRabbitHunger)
+    inst.components.hunger:SetPercent(0)
+    inst.components.hunger:SetRate(0)
+
+    inst.components.trader:SetAcceptTest(ShouldAcceptRabbit)
+end
+
+local function OnFeed(inst, food) 
     print("OnFeed")
     if inst.components.hunger ~= nil then
         if food == "carrot" then
             inst.components.hunger:DoDelta(10, false, true)
         end
+    else
+        print("rabbitwheel does not have a hunger component")
     end
-end
-
-local function ShouldAcceptItem(inst, item)
-    print("ShouldAcceptItem")
-    return item.components.edible ~= nil and
-            (item.prefab ~= "carrot") -- and item.prefab ~= "carrot_cooked" ??
 end
 
 local function OnGetItemFromPlayer(inst, giver, item)
     print("OnGetItemFromPlayer")
-    --I eat food
-    if item.components.edible ~= nil then
-        if item.prefab == "carrot" then -- or item.prefab == "carrot_cooked" ??
-            OnFeed(inst, item)
-        end
+    if item.prefab == "carrot" or item.prefab == "carrot_cooked" then
+        OnFeed(inst, item)
+    elseif item.prefab == "rabbit" then
+        OnPutRabbit(inst, item)
     end
 end
 
-function OnRabbitHunger(inst, data)
-    print("OnRabbitHunger")
-    -- data = { oldpercent, newpercent, overtime, delta }
-    local factor = 0.5
-    -- TODO CONFIGURABLE
-    -- TODO CALCULATE based on hunger
-    inst.components.fueled:DoDelta(data.delta * factor) -- transform a part of the hunger into energy
+--------------------------------------------------------------------------
+
+local function OnBuilt3(inst)
+    print("OnBuilt3")
+    inst:RemoveTag("NOCLICK")
+
+    inst.components.circuitnode:ConnectTo("engineering")
+
+    OnRemoveRabbit(inst)
+    -- OnFuelEmpty(inst)
 end
 
-function OnPutRabbit(inst, rabbit)
-    print("OnPutRabbit")
+local function OnBuilt2(inst)
+    print("OnBuilt2")
+
+end
+
+local function OnBuilt1(inst)
+    print("OnBuilt1")
+    inst.SoundEmitter:PlaySound("dontstarve/rabbit/scream_short")
+end
+
+local function OnBuilt(inst)--, data)
+    print("OnBuilt")
+    if inst._inittask ~= nil then
+        inst._inittask:Cancel()
+        inst._inittask = nil
+    end
+    
+    inst.components.circuitnode:Disconnect()
+    inst.AnimState:PlayAnimation("place")
+    inst.AnimState:ClearAllOverrideSymbols()
     inst.SoundEmitter:PlaySound("dontstarve/rabbit/scream")
+    inst:AddTag("NOCLICK")
 
-    inst:RemoveComponent("rabbitcage")
+    BroadcastCircuitChanged(inst)
+    StopSoundLoop(inst)
+    inst:DoTaskInTime(30 * FRAMES, OnBuilt1)
+    inst:DoTaskInTime(50 * FRAMES, OnBuilt2)
+    inst:DoTaskInTime(75 * FRAMES, OnBuilt3)
+end
 
-     -- TODO make configurable
-    local caloriesperday = 50
-    local maxhunger = 100 
+--------------------------------------------------------------------------
 
-    inst:AddComponent("health") -- every inst with hunger has also health, I guess
-    inst.components.health:SetMaxHealth(TUNING.RABBIT_HEALTH)
-    inst.components.health.ondelta = OnRabbitHealthDelta
 
-    inst:AddComponent("hunger")
-    inst.components.hunger:SetMax(100)
-    inst.components.hunger:SetRate(caloriesperday/TUNING.TOTAL_DAY_TIME)
-    inst.components.hunger:SetKillRate(0) -- don't hurt the rabbitwheel on hunger
+local function OnSave(inst, data)
+    print("OnSave")
+    data.burnt = inst.components.burnable ~= nil and inst.components.burnable:IsBurning() or inst:HasTag("burnt") or nil
+    data.hasrabbit = inst.components.rabbitcage.hasrabbit
 
-    self.inst:ListenForEvent("hungerdelta", OnRabbitHunger)
+end
 
-    inst:AddComponent("trader")
-    inst.components.trader:SetAcceptTest(ShouldAcceptItem)
-    inst.components.trader.onaccept = OnGetItemFromPlayer
-    inst.components.trader.deleteitemonaccept = true
+local function OnLoad(inst, data, ents)
+    print("OnLoad")
+    if data ~= nil and data.burnt then
+        inst.components.burnable.onburnt(inst)
+    else
+        if inst.components.fueled then
+            if inst.components.fueled:IsEmpty() then
+                OnFuelEmpty(inst)
+            else
+                UpdateSoundLoop(inst, inst.components.fueled:GetCurrentSection())
+                -- if inst.AnimState:IsCurrentAnimation("idle_charge") then
+                --     inst.AnimState:SetTime(inst.AnimState:GetCurrentAnimationLength() * math.random())
+                -- end
+            end
+        end
 
-    inst:AddComponent("fueled")
-    inst.components.fueled:SetDepletedFn(OnFuelEmpty)
-    inst.components.fueled:SetTakeFuelFn(OnAddFuel)
-    inst.components.fueled:SetSections(NUM_LEVELS)
-    inst.components.fueled:SetSectionCallback(OnFuelSectionChange)
-    inst.components.fueled:InitializeFuelLevel(TUNING.WINONA_BATTERY_LOW_MAX_FUEL_TIME / 2)
-    inst.components.fueled.fueltype = FUELTYPE.MAGIC -- no associated fuel
-    inst.components.fueled.accepting = true
-    inst.components.fueled:StartConsuming()
+        if inst.components.rabbitcage then
+            inst.components.rabbitcage.hasrabbit = data.hasrabbit
+        end
+
+        if inst.components.rabbitcage.hasrabbit then
+            OnPutRabbit(inst)
+        else
+            OnRemoveRabbit(inst)
+        end
+    end
 end
 
 --------------------------------------------------------------------------
@@ -543,10 +553,11 @@ local function fn()
 
     inst:AddTag("structure")
     inst:AddTag("engineeringbattery")
+    inst:AddTag("rabbitwheel")
 
     inst.AnimState:SetBank("rabbitwheel")
     inst.AnimState:SetBuild("rabbitwheel")
-    inst.AnimState:PlayAnimation("idle_charge", true)
+    inst.AnimState:PlayAnimation("idle_norabbit", true)
 
     inst.MiniMapEntity:SetIcon("winona_battery_low.png")
 
@@ -581,6 +592,37 @@ local function fn()
     inst.components.circuitnode:SetRange(TUNING.WINONA_BATTERY_RANGE)
     inst.components.circuitnode:SetOnConnectFn(OnConnectCircuit)
     inst.components.circuitnode:SetOnDisconnectFn(OnDisconnectCircuit)
+
+    inst:AddComponent("trader")
+    -- SetAcceptTest is changing depending on state
+    inst.components.trader.onaccept = OnGetItemFromPlayer
+    inst.components.trader.deleteitemonaccept = false
+
+    inst:AddComponent("rabbitcage")
+    inst.components.rabbitcage.hasrabbit = false
+
+    -- TODO make configurable
+    local caloriesperday = 50
+    local maxhunger = 100
+
+    inst:AddComponent("health") -- every inst with hunger has also health, I guess
+    inst.components.health:SetMaxHealth(TUNING.RABBIT_HEALTH)
+    inst.components.health.ondelta = OnRabbitHealthDelta
+
+    inst:AddComponent("hunger")
+    inst.components.hunger:SetMax(100)
+    inst.components.hunger:SetRate(0) -- caloriesperday/TUNING.TOTAL_DAY_TIME)
+    inst.components.hunger:SetKillRate(0) -- don't hurt the rabbitwheel on hunger
+
+    inst:AddComponent("fueled")
+    inst.components.fueled:SetDepletedFn(OnFuelEmpty)
+    -- inst.components.fueled:SetTakeFuelFn(OnAddFuel)
+    inst.components.fueled:SetSections(NUM_LEVELS)
+    inst.components.fueled:SetSectionCallback(OnFuelSectionChange)
+    inst.components.fueled:InitializeFuelLevel(TUNING.WINONA_BATTERY_LOW_MAX_FUEL_TIME)
+    inst.components.fueled.fueltype = FUELTYPE.MAGIC -- no associated fuel
+    inst.components.fueled.accepting = false
+    inst.components.fueled:StartConsuming()
 
     inst:ListenForEvent("onbuilt", OnBuilt)
     inst:ListenForEvent("engineeringcircuitchanged", OnCircuitChanged)
