@@ -11,9 +11,11 @@ NEWSTRINGS = {
 		GENERIC = {
 			DESCRIBE = {
 				RABBITWHEEL = {
-					EMPTY = "Not working, I guess..",
-					DONE = "Much rot. WOW",
-					BURNT = "P-oops..."
+					DESERTED = "Where do I find hamsters?",
+					OFF = "Not working, I guess..",
+					LOWPOWER = "This won't much longer!",
+					CHARGING = "Run rabbit, run!",
+					BURNT = "Oops...",
 				}
 			},
 		},
