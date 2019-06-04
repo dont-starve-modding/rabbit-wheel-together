@@ -57,7 +57,7 @@ local function UpdateCircuitPower(inst)
                 end)
                 load = load + 1 / batteries
             end)
-            inst.components.fueled.rate = math.max(load, TUNING.WINONA_BATTERY_MIN_LOAD) * TUNING.WINONA_BATTERY_LOW_FUEL_RATE_MULT
+            inst.components.fueled.rate = math.max(load, TUNING.WINONA_BATTERY_MIN_LOAD)
         else
             inst.components.fueled.rate = 0
         end
@@ -251,20 +251,41 @@ end
 --     end
 -- end
 
+local function OnStartGenerating(inst)
+    print("OnStartGenerating")
+    inst.AnimState:PushAnimation("idle_charge")
+end
+
+local function OnStopGenerating(inst)
+    print("OnStopGenerating")
+    inst.AnimState:PushAnimation("idle_empty")
+end
+
+
 local function OnFuelSectionChange(new, old, inst)
     print("OnFuelSectionChange " .. tostring(new))
 
-    local val = "m"..tostring(math.clamp(new + 1, 1, 7))
-    print("val"..tostring(val))
+    local newsection = math.clamp(new + 1, 1, 7)
+    local val = "m"..tostring(newsection)
+    print("val ".. tostring(val))
     inst.AnimState:OverrideSymbol("status", "rabbitwheel", val)
 
-    inst.AnimState:OverrideSymbol("status", "rabbitwheel", val)
     inst.AnimState:OverrideSymbol("m1", "rabbitwheel", val)
     inst.AnimState:OverrideSymbol("m2", "rabbitwheel", val)
     inst.AnimState:OverrideSymbol("a", "rabbitwheel", val)
 
+    if inst.components.fueled ~= nil then
+        if inst.components.fueled.consuming then
+            if newsection < 7 then
+                OnStartGenerating(inst)
+            else
+                OnStopGenerating(inst)
+            end
+        end
+    end
+
     -- inst.AnimState:ClearOverrideSymbol("plug")
-    UpdateSoundLoop(inst, new)
+    UpdateSoundLoop(inst, newsection)
 end
 
 
@@ -272,14 +293,6 @@ local function OnInit(inst)
     print("OnInit")
     inst._inittask = nil
     inst.components.circuitnode:ConnectTo("engineering")
-end
-
-local function OnLoadPostPass(inst)
-    print("OnLoadPostPass")
-    if inst._inittask ~= nil then
-        inst._inittask:Cancel()
-        OnInit(inst)
-    end
 end
 
 local PLACER_SCALE = 1.5
@@ -369,12 +382,11 @@ end
 
 
 local function OnRabbitHunger(inst, data)
-    print("OnRabbitHunger " .. tostring(data.delta))
+    print("OnRabbitHunger " .. tostring(data.delta) .. ": " .. tostring(data.newpercent*TUNING.RABBIT_MAX_HUNGER))
+    -- data = { oldpercent, newpercent, overtime, delta }
     if data.delta == 0 then
         return
     end 
-
-    -- data = { oldpercent, newpercent, overtime, delta }
 
     -- TODO tweak based on current hunger
     local factor = TUNING.RABBIT_JOULE_CONVERSION_RATE
@@ -414,7 +426,6 @@ local function OnPutRabbit(inst, rabbit)
 
     inst.components.rabbitcage:PutRabbit()
     
-    inst.components.hunger:SetPercent(100)
     inst.components.hunger:SetRate(TUNING.RABBIT_JOULE_PER_DAY/TUNING.TOTAL_DAY_TIME)
     inst:ListenForEvent("hungerdelta", OnRabbitHunger)
 
@@ -440,9 +451,9 @@ local function OnRemoveRabbit(inst)
 end
 
 local function OnFeed(inst, food) 
-    print("OnFeed")
+    print("OnFeed " .. tostring(food))
     if inst.components.hunger ~= nil then
-        if food == "carrot" then
+        if food.prefab == "carrot" then
             inst.components.hunger:DoDelta(TUNING.RABBIT_CARROT_JOULE, false, true)
         end
     else
@@ -456,6 +467,7 @@ local function OnGetItemFromPlayer(inst, giver, item)
         OnFeed(inst, item)
     elseif item.prefab == "rabbit" then
         OnPutRabbit(inst, item)
+        inst.components.hunger:SetPercent(100)
     end
 end
 
@@ -530,12 +542,20 @@ local function OnLoad(inst, data, ents)
         if inst.components.rabbitcage then
             inst.components.rabbitcage.hasrabbit = data.hasrabbit
         end
+    end
+end
 
-        if inst.components.rabbitcage.hasrabbit then
-            OnPutRabbit(inst)
-        else
-            OnRemoveRabbit(inst)
-        end
+local function OnLoadPostPass(inst)
+    print("OnLoadPostPass")
+    if inst._inittask ~= nil then
+        inst._inittask:Cancel()
+        OnInit(inst)
+    end
+
+    if inst.components.rabbitcage.hasrabbit then
+        OnPutRabbit(inst)
+    else
+        OnRemoveRabbit(inst)
     end
 end
 
@@ -603,18 +623,14 @@ local function fn()
     inst:AddComponent("rabbitcage")
     inst.components.rabbitcage.hasrabbit = false
 
-    -- TODO make configurable
-    local caloriesperday = TUNING.RABBIT_CALORIES_PER_DAY
-    local maxhunger = 100
-
-    inst:AddComponent("health") -- every inst with hunger has also health, I guess
-    inst.components.health:SetMaxHealth(TUNING.RABBIT_HEALTH)
-    inst.components.health.ondelta = OnRabbitHealthDelta
-
     inst:AddComponent("hunger")
     inst.components.hunger:SetMax(TUNING.RABBIT_MAX_HUNGER)
     inst.components.hunger:SetRate(0)
     inst.components.hunger:SetKillRate(0) -- don't hurt the rabbitwheel on hunger
+
+    inst:AddComponent("health") -- every inst with hunger has also health, I guess
+    inst.components.health:SetMaxHealth(TUNING.RABBIT_HEALTH)
+    inst.components.health.ondelta = OnRabbitHealthDelta
 
     inst:AddComponent("fueled")
     inst.components.fueled:SetDepletedFn(OnFuelEmpty)

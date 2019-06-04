@@ -47,7 +47,7 @@ end
 TUNING.RABBIT_MAX_HUNGER = 20 -- how many joule can a rabbit store?
 TUNING.RABBIT_JOULE_PER_DAY = 50 -- how many joule are burned in a single day?
 TUNING.RABBIT_CARROT_JOULE = 10 -- how many joule gives a carrot?
-TUNING.RABBIT_SEGMENTS_PER_JOULE = 1 -- how many segments lasts a battery with 1 Joule burned by the rabbit?
+TUNING.RABBIT_SEGMENTS_PER_JOULE = 0.8 -- how many segments lasts a battery with 1 Joule burned by the rabbit?
 
 TUNING.RABBITWHEEL_CAPACITY_IN_SEGMENTS = 5 -- how many segments lasts a full battery?
 TUNING.RABBITWHEEL_FULL_BATTERY_DURATION = TUNING.SEG_TIME * TUNING.RABBITWHEEL_CAPACITY_IN_SEGMENTS
@@ -56,12 +56,11 @@ TUNING.RABBIT_JOULE_CONVERSION_RATE =
     -- how much time is added to a battery when 1 Joule is burned by the rabbit?
     TUNING.SEG_TIME * TUNING.RABBIT_SEGMENTS_PER_JOULE
 
-
 local recipe = AddRecipe("rabbitwheel",
     -- {
-    --     Ingredient("sewing_tape", 1), 
-    --     Ingredient("log", 2), 
-    --     Ingredient("nitre", 2)
+    --     Ingredient("sewing_tape", 2),
+    --     Ingredient("boards", 3),
+    --     Ingredient("transistor", 1)
     -- }, 
     {
         GLOBAL.Ingredient("rocks", TUNING.RABBITWHEEL_COST_ROCKS),
@@ -85,7 +84,7 @@ local oldstrfn = GLOBAL.ACTIONS.GIVE.strfn
 GLOBAL.ACTIONS.GIVE.strfn = function(act)
     return oldstrfn(act) 
     or (act.target ~= nil
-        and (
+        and ( -- if there is no rabbit, print "Place"
             act.target:HasTag("rabbitwheel") 
             and not act.target.components.rabbitcage:HasRabbit() 
             and "NOTREADY")
