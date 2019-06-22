@@ -61,14 +61,14 @@ TUNING.RABBIT_JOULE_CONVERSION_RATE =
     TUNING.SEG_TIME * TUNING.RABBIT_SEGMENTS_PER_JOULE
 
 local recipe = AddRecipe("rabbitwheel",
-    -- {
-    --     Ingredient("sewing_tape", 2),
-    --     Ingredient("boards", 3),
-    --     Ingredient("transistor", 1)
-    -- }, 
     {
-        GLOBAL.Ingredient("rocks", TUNING.RABBITWHEEL_COST_ROCKS),
+        Ingredient("sewing_tape", 2),
+        Ingredient("boards", 3),
+        Ingredient("transistor", 1)
     }, 
+    -- {
+    --     GLOBAL.Ingredient("rocks", TUNING.RABBITWHEEL_COST_ROCKS),
+    -- }, 
     GLOBAL.CUSTOM_RECIPETABS.ENGINEERING, 
     GLOBAL.TECH.NONE, 
     "rabbitwheel_placer", 
@@ -90,7 +90,7 @@ GLOBAL.ACTIONS.GIVE.strfn = function(act)
     or (act.target ~= nil
         and ( -- if there is no rabbit, print "Place"
             act.target:HasTag("rabbitwheel") 
-            and not act.target.components.rabbitcage:HasRabbit() 
+            and not act.target:HasTag("hasrabbit")
             and "NOTREADY")
     )
     or nil -- nil for "Give"

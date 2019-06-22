@@ -13,10 +13,12 @@ end
 
 
 function Rabbitcage:PutRabbit()
+    self.inst:AddTag("hasrabbit")
     self.hasrabbit = true
 end
 
 function Rabbitcage:RemoveRabbit()
+    self.inst:RemoveTag("hasrabbit")
     self.hasrabbit = false
 end
 

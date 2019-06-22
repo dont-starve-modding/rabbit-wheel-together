@@ -332,8 +332,8 @@ end
 -- 6. the rabbit produces energy based on hunger
 
 local function OnRabbitHealthDelta(inst, oldpercent, newpercent)
-    print("OnRabbitHealthDelta")
-    if newpercent <= 0 then
+    print("OnRabbitHealthDelta", newpercent)
+    if newpercent <= 0.05 then
         OnRemoveRabbit(inst)
     end
 end
@@ -396,7 +396,7 @@ local function OnRabbitHunger(inst, data)
 end
 
 
-local function OnPutRabbit(inst, rabbit)
+function OnPutRabbit(inst, rabbit)
     print("OnPutRabbit")
     if not POPULATING and inst.components.rabbitcage and inst.components.rabbitcage:HasRabbit() then
         inst.SoundEmitter:PlaySound("dontstarve/rabbit/scream")
@@ -412,7 +412,7 @@ local function OnPutRabbit(inst, rabbit)
     inst.components.trader:SetAcceptTest(ShouldAcceptCarrot)
 end
 
-local function OnRemoveRabbit(inst)
+function OnRemoveRabbit(inst)
     print("OnRemoveRabbit")
 
     if not POPULATING and inst.components.rabbitcage and inst.components.rabbitcage:HasRabbit() then
@@ -558,7 +558,10 @@ local function OnSave(inst, data)
     print("OnSave")
     data.burnt = inst.components.burnable ~= nil and inst.components.burnable:IsBurning() or inst:HasTag("burnt") or nil
     data.hasrabbit = inst.components.rabbitcage.hasrabbit
+    data.currenthealth = inst.components.health.currenthealth
     data.maxhealth = inst.components.health.maxhealth
+    print("health")
+    print(data.currenthealth)
 end
 
 local function OnLoad(inst, data, ents)
@@ -582,6 +585,9 @@ local function OnLoad(inst, data, ents)
         end
 
         inst.components.health:SetMaxHealth(data.maxhealth or TUNING.RABBIT_MAX_HEALTH)
+        inst.components.health.currenthealth = data.currenthealth or data.maxhealth
+        print("health after")
+        print(inst.components.health.currenthealth)
     end
 end
 
