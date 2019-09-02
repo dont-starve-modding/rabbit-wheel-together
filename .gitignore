@@ -44,3 +44,8 @@ winona_battery_low/
 winona_battery_placement/
 rabbit/
 rabbit-wheel/*/*.png
+
+# tmp
+f-first-try/*
+f-1/*
+rw-s/*
