@@ -1,6 +1,6 @@
 name = "Rabbit Wheel"
 version = "0.1.0"
-description = "Version " .. version .. "\n\n Adds rabbit wheel to your game! Only Winona may use it."
+description = "Version " .. version .. "\n\n Adds the rabbit wheel to your game! Only Winona may use it."
 author = "s1m13"
 
 api_version = 10
