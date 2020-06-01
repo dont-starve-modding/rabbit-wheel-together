@@ -203,12 +203,25 @@ local function GetStatus(inst)
     end
     local level = inst.components.fueled ~= nil and inst.components.fueled:GetCurrentSection() or nil
     local hasrabbit = inst.components.rabbitcage ~= nil and inst.components.rabbitcage:HasRabbit() or nil
-    print(level)
-    return level ~= nil
-        and (hasrabbit ~= nil and hasrabbit == false and "DESERTED")
-        and ((level <= 0 and "OFF") or
-             (level <= 1 and "LOWPOWER"))
-        or "CHARGING"
+    local isStarving = inst.components.hunger:IsStarving()
+
+    if(hasrabbit == nil or hasrabbit == false) then
+        return "DESERTED"
+    end
+
+    if(level == 0) then
+        return "OFF"
+    end
+
+    if(level == 1) then
+        return "LOWPOWER"
+    end
+
+    if(isStarving) then
+        return "IDLE"
+    end
+
+    return "CHARGING"
 end
 
 -- local function OnAddFuel(inst)
@@ -504,7 +517,7 @@ local function OnFuelSectionChange(new, old, inst)
             OnStartGenerating(inst)
         end
     end
-    UpdateSoundLoop(inst, newsection)
+    StartSoundLoop(inst, newsection)
 end
 
 
@@ -573,7 +586,7 @@ local function OnLoad(inst, data, ents)
             if inst.components.fueled:IsEmpty() then
                 OnFuelEmpty(inst)
             else
-                UpdateSoundLoop(inst, inst.components.fueled:GetCurrentSection())
+                StartSoundLoop(inst, inst.components.fueled:GetCurrentSection())
                 -- if inst.AnimState:IsCurrentAnimation("idle_charge") then
                 --     inst.AnimState:SetTime(inst.AnimState:GetCurrentAnimationLength() * math.random())
                 -- end
