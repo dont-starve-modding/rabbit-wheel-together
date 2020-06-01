@@ -43,9 +43,12 @@ build/
 winona_battery_low/
 winona_battery_placement/
 rabbit/
-rabbit-wheel/*/*.png
+rabbit-wheel-a/*
+rabbitwheel-b/*
 
 # tmp
 f-first-try/*
 f-1/*
 rw-s/*
+
+*/*.zip
