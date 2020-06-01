@@ -9,7 +9,7 @@ mkdir -p build/images/inventoryimages
 mkdir -p build/anim
 
 echo "compiling animations..."
-"C:\Program Files (x86)\Steam\steamapps\common\Don't Starve Mod Tools\mod_tools\scml.exe" rabbit-wheel/rabbitwheel.scml .
+"C:\Program Files (x86)\Steam\steamapps\common\Don't Starve Mod Tools\mod_tools\scml.exe" rabbitwheel/rabbitwheel.scml .
 
 echo "copying files and scripts..."
 cp -r scripts/* build/scripts/
