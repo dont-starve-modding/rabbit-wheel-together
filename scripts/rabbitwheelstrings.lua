@@ -13,7 +13,7 @@ NEWSTRINGS = {
 				RABBITWHEEL = {
 					DESERTED = "Where do I find hamsters?",
 					OFF = "Not working, I guess..",
-					LOWPOWER = "This won't much longer!",
+					LOWPOWER = "This won't last much longer!",
 					CHARGING = "Run rabbit, run!",
 					BURNT = "Oops...",
 				}
