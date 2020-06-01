@@ -29,20 +29,9 @@ GLOBAL.STRINGS = TableMerge(GLOBAL.STRINGS, NEWSTRINGS)
 
 -- rabbitwheel Recipe
 
-TUNING.RABBITWHEEL_COST_ROCKS = 1
-TUNING.RABBITWHEEL_COST_POOP = 0
-TUNING.RABBITWHEEL_COST_LOG = 0
-
-if (GetModConfigData("poop_amount") == "low") then
-    TUNING.RABBITWHEEL_COST_ROCKS = 2
-    TUNING.RABBITWHEEL_COST_POOP = 1
-    TUNING.RABBITWHEEL_COST_LOG = 2
-end
-if (GetModConfigData("poop_amount") == "high") then
-    TUNING.RABBITWHEEL_COST_ROCKS = 10
-    TUNING.RABBITWHEEL_COST_POOP = 5
-    TUNING.RABBITWHEEL_COST_LOG = 8
-end
+TUNING.RABBITWHEEL_COST_SEWING_TAPE = 2
+TUNING.RABBITWHEEL_COST_BOARDS = 3
+TUNING.RABBITWHEEL_COST_TRANSISTOR = 1
 
 TUNING.RABBIT_MAX_HEALTH = TUNING.RABBIT_HEALTH
 TUNING.RABBIT_STARVE_KILL_TIME = TUNING.TOTAL_DAY_TIME * 2
@@ -52,19 +41,56 @@ TUNING.RABBIT_CARROT_JOULE = 10 -- how many joule gives a carrot?
 TUNING.RABBIT_CARROT_HEAL_PERCENT = 100
 TUNING.RABBIT_CARROT_POISON_PERCENT = 4 -- how much max health does a rabbit lose on carrot feeding?
 TUNING.RABBIT_SEGMENTS_PER_JOULE = 0.8 -- how many segments lasts a battery with 1 Joule burned by the rabbit?
-
 TUNING.RABBITWHEEL_CAPACITY_IN_SEGMENTS = 6 -- how many segments lasts a full battery?
-TUNING.RABBITWHEEL_FULL_BATTERY_DURATION = TUNING.SEG_TIME * TUNING.RABBITWHEEL_CAPACITY_IN_SEGMENTS
 
+-- configuration
+
+if (GetModConfigData("rabbit_lifetime") == "low") then
+    TUNING.RABBIT_CARROT_POISON_PERCENT = 2
+end
+if (GetModConfigData("rabbit_lifetime") == "high") then
+    TUNING.RABBIT_CARROT_POISON_PERCENT = 6
+end
+
+if (GetModConfigData("rabbit_perseverance") == "low") then
+    TUNING.RABBIT_MAX_HUNGER = 15
+    TUNING.RABBIT_CARROT_JOULE = 5
+end
+if (GetModConfigData("rabbit_perseverance") == "high") then
+    TUNING.RABBIT_MAX_HUNGER = 40
+    TUNING.RABBIT_CARROT_JOULE = 20
+end
+
+if (GetModConfigData("rabbit_power") == "low") then
+    TUNING.RABBIT_JOULE_PER_DAY = 25
+end
+if (GetModConfigData("rabbit_power") == "high") then
+    TUNING.RABBIT_JOULE_PER_DAY = 100
+end
+
+if (GetModConfigData("rabbit_wheel_costs") == "low") then
+    TUNING.RABBITWHEEL_COST_SEWING_TAPE = 1
+    TUNING.RABBITWHEEL_COST_BOARDS = 2
+    TUNING.RABBITWHEEL_COST_TRANSISTOR = 1
+end
+if (GetModConfigData("rabbit_wheel_costs") == "high") then
+    TUNING.RABBITWHEEL_COST_SEWING_TAPE = 3
+    TUNING.RABBITWHEEL_COST_BOARDS = 6
+    TUNING.RABBITWHEEL_COST_TRANSISTOR = 2
+end
+
+-- derived parameters
+
+TUNING.RABBITWHEEL_FULL_BATTERY_DURATION = TUNING.SEG_TIME * TUNING.RABBITWHEEL_CAPACITY_IN_SEGMENTS
+-- how much time is added to a battery when 1 Joule is burned by the rabbit?
 TUNING.RABBIT_JOULE_CONVERSION_RATE = 
-    -- how much time is added to a battery when 1 Joule is burned by the rabbit?
     TUNING.SEG_TIME * TUNING.RABBIT_SEGMENTS_PER_JOULE
 
 local recipe = AddRecipe("rabbitwheel",
     {
-        Ingredient("sewing_tape", 2),
-        Ingredient("boards", 3),
-        Ingredient("transistor", 1)
+        Ingredient("sewing_tape", TUNING.RABBITWHEEL_COST_SEWING_TAPE),
+        Ingredient("boards", TUNING.RABBITWHEEL_COST_BOARDS),
+        Ingredient("transistor", TUNING.RABBITWHEEL_COST_TRANSISTOR)
     }, 
     -- {
     --     GLOBAL.Ingredient("rocks", TUNING.RABBITWHEEL_COST_ROCKS),
@@ -74,7 +100,8 @@ local recipe = AddRecipe("rabbitwheel",
     "rabbitwheel_placer", 
     TUNING.WINONA_ENGINEERING_SPACING, 
     nil, nil, 
-    "handyperson")
+    "handyperson"
+)
 
 
 recipe.atlas = "images/inventoryimages/rabbitwheel.xml"
